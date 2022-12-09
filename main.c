@@ -5,7 +5,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-static long num_steps = 100000000;
+static long num_steps = 100;
 double step;
 
 int find_index(char *string, char c)
@@ -30,13 +30,13 @@ char *substring(char *str, int start, int end)
 {
     int i;
     int length = end - start;
-    char *substr = malloc(length + 1); // allocate memory for substring
+    char *substr = malloc(length + 1);
 
     for (i = 0; i < length; i++)
     {
         substr[i] = str[start + i];
     }
-    substr[length] = '\0'; // add null terminator
+    substr[length] = '\0';
 
     return substr;
 }
@@ -68,7 +68,6 @@ char *removeSpacesFromStr(char *string)
         }
     }
 
-    // Finally placing final character at the string end
     string[non_space_count] = ' ';
     return string;
 }
@@ -76,7 +75,6 @@ char *removeSpacesFromStr(char *string)
 double calculateSpace(int a, int b, double step, char *str)
 {
     double space = 0;
-    // int search = find_string(str, "x");
 
     if (find_string(str, "x"))
     {
@@ -84,43 +82,105 @@ double calculateSpace(int a, int b, double step, char *str)
         {
             int indexOfS = find_index(str, 's');
             char *constantString = substring(str, 0, indexOfS);
-            // #pragma omp parallel for reduction(+ \
-//                                    : space)
-            for (double i = a; i <= b; i += step)
+            double constantValue = string_to_double(constantString);
+            if (strcmp(constantString, "") == 0)
             {
-                double height = sin(i);
-                double width = step;
-                space += height * width;
+                constantValue = 1;
             }
 
-            return string_to_double(constantString) * space;
+#pragma omp parallel
+            {
+                int thread_num = omp_get_thread_num();
+                int threads_num = omp_get_num_threads() - 1;
+                double step_shift = step + (double)threads_num / (double)num_steps;
+
+                double startingPoint = (double)thread_num / (double)num_steps;
+
+                double partialSpace = 0;
+                for (double i = a + startingPoint; i <= b; i += step_shift)
+                {
+
+                    double height = sin(i);
+
+                    double width = step;
+
+                    partialSpace += height * width;
+                }
+
+#pragma omp critical
+                space += partialSpace;
+            }
+
+            return constantValue * space;
         }
         if (find_string(str, "cos"))
         {
             int indexOfC = find_index(str, 'c');
             char *constantString = substring(str, 0, indexOfC);
-
-            for (double i = a; i <= b; i += step)
+            double constantValue = string_to_double(constantString);
+            if (strcmp(constantString, "") == 0)
             {
-                double height = cos(i);
-                double width = step;
-                space += height * width;
+                constantValue = 1;
             }
 
-            return string_to_double(constantString) * space;
+#pragma omp parallel
+            {
+                int thread_num = omp_get_thread_num();
+                int threads_num = omp_get_num_threads() - 1;
+                double step_shift = step + (double)threads_num / (double)num_steps;
+
+                double startingPoint = (double)thread_num / (double)num_steps;
+
+                double partialSpace = 0;
+                for (double i = a + startingPoint; i <= b; i += step_shift)
+                {
+
+                    double height = cos(i);
+
+                    double width = step;
+
+                    partialSpace += height * width;
+                }
+
+#pragma omp critical
+                space += partialSpace;
+            }
+
+            return constantValue * space;
         }
         if (find_string(str, "tan"))
         {
             int indexOfS = find_index(str, 't');
             char *constantString = substring(str, 0, indexOfS);
-            for (double i = a; i <= b; i += step)
+            double constantValue = string_to_double(constantString);
+            if (strcmp(constantString, "") == 0)
             {
-                double height = tan(i);
-                double width = step;
-                space += height * width;
+                constantValue = 1;
+            }
+#pragma omp parallel
+            {
+                int thread_num = omp_get_thread_num();
+                int threads_num = omp_get_num_threads() - 1;
+                double step_shift = step + (double)threads_num / (double)num_steps;
+
+                double startingPoint = (double)thread_num / (double)num_steps;
+
+                double partialSpace = 0;
+                for (double i = a + startingPoint; i <= b; i += step_shift)
+                {
+
+                    double height = tan(i);
+                    ;
+                    double width = step;
+
+                    partialSpace += height * width;
+                }
+
+#pragma omp critical
+                space += partialSpace;
             }
 
-            return string_to_double(constantString) * space;
+            return constantValue * space;
         }
 
         if (find_string(str, "^")) // Power
@@ -129,29 +189,73 @@ double calculateSpace(int a, int b, double step, char *str)
             int lenOfString = strlen(str);
 
             char *constantString = substring(str, 0, indexOfX);
-            char *powerValue = substring(str, indexOfX + 2, lenOfString);
+            char *powerValueString = substring(str, indexOfX + 2, lenOfString);
 
-            for (double i = a; i <= b; i += step)
+            double powerValue = string_to_double(powerValueString);
+            double constantValue = string_to_double(constantString);
+            if (strcmp(constantString, "") == 0)
             {
-                double height = pow(i, string_to_double(powerValue));
-                double width = step;
-                space += height * width;
+                constantValue = 1;
             }
 
-            return string_to_double(constantString) * space;
+#pragma omp parallel
+            {
+                int thread_num = omp_get_thread_num();
+                int threads_num = omp_get_num_threads() - 1;
+                double step_shift = step + (double)threads_num / (double)num_steps;
+
+                double startingPoint = (double)thread_num / (double)num_steps;
+
+                double partialSpace = 0;
+                for (double i = a + startingPoint; i <= b; i += step_shift)
+                {
+
+                    double height = pow(i, powerValue);
+                    ;
+                    double width = step;
+
+                    partialSpace += height * width;
+                }
+
+#pragma omp critical
+                space += partialSpace;
+            }
+
+            return constantValue * space;
         }
 
         // for only X
         int indexOfX = find_index(str, 'x');
         char *constantString = substring(str, 0, indexOfX);
-        for (double i = a; i <= b; i += step)
+        double constantValue = string_to_double(constantString);
+        if (strcmp(constantString, "") == 0)
         {
-            double height = i;
-            double width = step;
-            space += height * width;
+            constantValue = 1;
         }
 
-        return string_to_double(constantString) * space;
+#pragma omp parallel
+        {
+            int thread_num = omp_get_thread_num();
+            int threads_num = omp_get_num_threads() - 1;
+            double step_shift = step + (double)threads_num / (double)num_steps;
+
+            double startingPoint = (double)thread_num / (double)num_steps;
+
+            double partialSpace = 0;
+            for (double i = a + startingPoint; i <= b; i += step_shift)
+            {
+
+                double height = i;
+                double width = step;
+
+                partialSpace += height * width;
+            }
+
+#pragma omp critical
+            space += partialSpace;
+        }
+
+        return constantValue * space;
     }
     else // Not containing any Variable = Square Area
     {
@@ -162,15 +266,15 @@ double calculateSpace(int a, int b, double step, char *str)
 
 int main()
 {
-    int a = -1;
-    int b = 1;
+    int a = 0;
+    int b = 10;
     double space = 0;
 
     step = 1.0 / (double)num_steps;
 
     double start_time = omp_get_wtime();
 
-    char function[] = "3x^22 - 300 + sin(x)";
+    char function[] = "2x - x^5 + tan(x)";
 
     printf("%s\n", function);
 
@@ -207,31 +311,3 @@ int main()
     printf("\nspace with %ld steps is %f in %lf seconds\n ", num_steps, space, run_time);
     printf("\n");
 }
-
-// for (double i = a; i <= b; i += step)
-// {
-//     double height = i;
-//     double width = step;
-
-//     // printf("%f \n", height);
-
-//     space += height * width;
-
-//     // printf("%f \n",i);
-// }
-
-// gcc -Wall main.c -o main -lm -fopenmp
-
-// int main()
-// {
-//     char str[] = "Hello World!";
-//     char *hello = substring(str, 0, 5);
-//     printf("%s\n", hello); // prints "Hello"
-//     // free(hello);           // free memory
-
-//     char *world = substring(str, 6, 11);
-//     printf("%s\n", str); // prints "World"
-//     free(world);         // free memory
-
-//     return 0;
-// }
